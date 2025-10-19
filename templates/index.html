@@ -1,0 +1,159 @@
+<!-- ai se banwaya h yeeeeee  -->
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌿 Crop Disease Detector</title>
+    
+    <style> 
+        /* ye bhi ai se hi banwaya h */
+
+
+body {
+  background: linear-gradient(135deg, #a8e063, #56ab2f);
+  font-family: "Poppins", sans-serif;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  padding: 40px;
+  max-width: 450px;
+  text-align: center;
+  animation: fadeIn 1s ease-in-out;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: 1.8em;
+  color: #2f5d62;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 0.95em;
+  margin-bottom: 25px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input[type="file"] {
+  background: #f0f0f0;
+  padding: 10px;
+  border: 2px dashed #56ab2f;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+button {
+  background: linear-gradient(90deg, #56ab2f, #a8e063);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(86, 171, 47, 0.3);
+}
+
+#previewImage {
+  max-width: 100%;
+  margin-top: 20px;
+  border-radius: 10px;
+  display: none;
+}
+
+#resultBox {
+  margin-top: 25px;
+  background: #eaffea;
+  padding: 20px;
+  border-radius: 15px;
+  border: 1px solid #c8e6c9;
+  text-align: left;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 AI Crop Disease Detection</h1>
+        <p class="subtitle">Upload a leaf image for instant remedy</p>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="image" id="imageInput" accept="image/*" required>
+            <button type="submit" id="predictBtn">🔍 Analyze</button>
+        </form>
+
+        <div id="preview">
+            <img id="previewImage" src="" alt="">
+        </div>
+
+        <div id="resultBox" class="hidden">
+            <h2 id="label"></h2>
+            <p><strong>Confidence:</strong> <span id="confidence"></span></p>
+            <p><strong>Remedy:</strong> <span id="remedy"></span></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const previewImage = document.getElementById('previewImage');
+        const resultBox = document.getElementById('resultBox');
+
+        document.getElementById('imageInput').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                previewImage.src = URL.createObjectURL(file);
+                previewImage.style.display = 'block';
+            }
+        });
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            document.getElementById('predictBtn').textContent = "⏳ Analyzing...";
+            
+            const response = await fetch("/predict", { method: "POST", body: formData });
+            const result = await response.json();
+
+            document.getElementById('predictBtn').textContent = "🔍 Analyze";
+
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            document.getElementById('label').textContent = "🩺 " + result.label;
+            document.getElementById('confidence').textContent = (result.confidence * 100).toFixed(2) + "%";
+            document.getElementById('remedy').textContent = result.remedy;
+            resultBox.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

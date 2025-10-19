@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌿 Crop Disease Detector</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0"></script>
+
+  <style>
+    body {
+      font-family: Poppins, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd, #c8e6c9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .card {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 25px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 450px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      border: 2px dashed #388e3c;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #f9fbe7;
+      width: 100%;
+    }
+
+    button {
+      margin-top: 15px;
+      background: #43a047;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #2e7d32;
+      transform: scale(1.05);
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1.1em;
+      color: #333;
+    }
+
+    #preview img {
+      margin-top: 15px;
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🌱 Crop Disease Detection</h1>
+    <p>Select a leaf image:</p>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="predictDisease()">Predict</button>
+    <div id="preview"></div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let model;
+    const classNames = [
+      "healthy",
+      "Tomato_blight",
+      "potato_blight",
+      "corn_blight",
+      "apple_blight",
+      "wheat_blight",
+      "rust",
+      "tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "Not_a_Leaf"
+    ];
+
+    const remedies = {
+      "healthy": "No action required. Keep monitoring regularly.",
+      "Tomato_blight": "Apply Mancozeb fungicide. Remove infected leaves.",
+      "potato_blight": "Use Mefenoxam + Mancozeb. Ensure air circulation.",
+      "corn_blight": "Apply Trifoxystrobin + Tebuconazole fungicide.",
+      "apple_blight": "Use copper fungicides and prune properly.",
+      "wheat_blight": "Use Tebuconazole or Propiconazole sprays.",
+      "rust": "Apply Chlorothalonil or Mancozeb fungicide.",
+      "tomato___Tomato_Yellow_Leaf_Curl_Virus": "Control whiteflies. Isolate infected plants.",
+      "Not_a_Leaf": "Please upload a clear leaf image."
+    };
+
+    async function loadModel() {
+      document.getElementById("result").innerHTML = "⏳ Loading model...";
+      model = await tf.loadLayersModel("model_web/model.json");
+      document.getElementById("result").innerHTML = "✅ Model loaded successfully!";
+    }
+
+    async function predictDisease() {
+      const input = document.getElementById("imageInput");
+      const resultDiv = document.getElementById("result");
+
+      if (!model) {
+        resultDiv.innerHTML = "⚠️ Model not loaded yet. Please wait.";
+        return;
+      }
+
+      if (!input.files[0]) {
+        alert("Please upload an image first!");
+        return;
+      }
+
+      // Preview
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById("preview").innerHTML = `<img src="${e.target.result}" alt="preview">`;
+      };
+      reader.readAsDataURL(input.files[0]);
+
+      const img = new Image();
+      img.src = URL.createObjectURL(input.files[0]);
+      await new Promise(resolve => img.onload = resolve);
+
+      // Preprocess
+      const tensor = tf.browser.fromPixels(img)
+        .resizeNearestNeighbor([224, 224])
+        .toFloat()
+        .div(tf.scalar(255.0))
+        .expandDims();
+
+      // Predict
+      const prediction = model.predict(tensor);
+      const data = await prediction.data();
+      const maxIdx = data.indexOf(Math.max(...data));
+
+      const label = classNames[maxIdx];
+      const confidence = (data[maxIdx] * 100).toFixed(2);
+      const remedy = remedies[label] || "No remedy available.";
+
+      resultDiv.innerHTML = `
+        <b>Disease:</b> ${label.replace(/_/g, " ")}<br>
+        <b>Confidence:</b> ${confidence}%<br>
+        <b>Remedy:</b> ${remedy}
+      `;
+    }
+
+    // Load model on page load
+    loadModel();
+  </script>
+</body>
+</html>
